@@ -17,6 +17,9 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+public slots:
+    void updateStatus(QString port, bool running);
+
 private slots:
     void on_actionExit_triggered();
 
@@ -28,6 +31,9 @@ private:
     void QDebug(QString mesg);
     void addToTable(QString service, QString ip);
     void startListeners();
+
+signals:
+    void startServiceListener(int);
 };
 
 #endif // MAINWINDOW_H

@@ -6,6 +6,8 @@
 #include <QDebug>
 #include <QTextStream>
 #include <QStringList>
+#include <QThread>
+#include <QList>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -13,7 +15,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     QStringList headers;
     headers.append("Service/Port");
-    headers.append("Target IP Address");
+    headers.append("Target");
+    headers.append("Status");
 
     ui->setupUi(this);
 
@@ -24,7 +27,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->portmapT->horizontalHeader()->setStretchLastSection(true);
 
-    this->parseConfFile();
+    parseConfFile();
+    startListeners();
 }
 
 MainWindow::~MainWindow()
@@ -73,15 +77,51 @@ void MainWindow::addToTable(QString service, QString ip)
     ui->portmapT->insertRow(numRows);
     ui->portmapT->setItem(numRows, 0, new QTableWidgetItem(service));
     ui->portmapT->setItem(numRows, 1, new QTableWidgetItem(ip));
+    ui->portmapT->setItem(numRows, 2, new QTableWidgetItem("Not Running"));
+    ui->portmapT->item(numRows,2)->setForeground(Qt::red);
 }
 
 void MainWindow::startListeners()
 {
     QMap<int, QString>::iterator it;
     Forwarding *forwarding;
+    QThread *thread;
 
     for(it = portmap.begin(); it != portmap.end(); ++it) {
         forwarding = new Forwarding(it.key(), it.value());
+        thread = new QThread();
+        thread->start();
+        forwarding->moveToThread(thread);
+
+        if(!connect(this, SIGNAL(startServiceListener(int)), forwarding,
+                SLOT(startListening(int))))
+        {
+            qDebug() << "Cannot connect listener signal";
+        }
+        if(!connect(forwarding, SIGNAL(isRunning(QString,bool)), this,
+                SLOT(updateStatus(QString,bool))))
+        {
+            qDebug() << "Cannot connect isRunning signal";
+        }
+        emit startServiceListener(it.key());
+    }
+}
+
+/****************** GENERAL SLOTS **************************/
+void MainWindow::updateStatus(QString port, bool running)
+{
+    QList<QTableWidgetItem *> items = ui->portmapT->findItems(port, Qt::MatchExactly);
+    QTableWidgetItem *cell;
+
+    if(items.size() > 0) {
+        cell = ui->portmapT->item(items[0]->row(), 2);
+        if(running) {
+            cell->setForeground(Qt::green);
+            cell->setText("Running");
+        } else {
+            cell->setForeground(Qt::red);
+            cell->setText("Not Running");
+        }
     }
 }
 

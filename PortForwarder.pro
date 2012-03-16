@@ -10,18 +10,24 @@ TARGET = PortForwarder
 TEMPLATE = app
 
 
-SOURCES += main.cpp\
+SOURCES += main.cpp \
         mainwindow.cpp \
     socket.cpp \
     forwarding.cpp \
-    epoll.c
+    epoll.cpp \
+    client.cpp
 
 HEADERS  += mainwindow.h \
     socket.h \
     forwarding.h \
-    epoll.h
+    epoll.h \
+    client.h
 
 FORMS    += mainwindow.ui
+
+
+
+
 
 
 
