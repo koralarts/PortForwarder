@@ -9,11 +9,13 @@ class Client : public QObject
 {
     Q_OBJECT 
 public:
-    explicit Client(int clifd, QString ip, QString target, int port, int cliPort);
+    explicit Client(int clifd, QString target, int port);
+    ~Client();
     int startTargetConnection();
 
 public slots:
-    void sendToInternal(int sockfd);
+    void sendToInternal(char *buff, int len);
+    void sendToExternal(int sockfd);
 
 private:
     int clifd;
@@ -22,8 +24,6 @@ private:
     int port;
     int cliPort;
     int sockfd;
-
-    void sendToExternal(int sockfd);
 
 signals:
 

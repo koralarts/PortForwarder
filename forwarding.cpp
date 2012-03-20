@@ -31,15 +31,18 @@ void Forwarding::startListening(int checkPort)
     int epfd;
     int numfd;
     int clifd;
+    int n;
+    char buff[BUFF_LEN];
 
     QThread *thread;
     Client *clientCon;
+    QMap <int, Client*> clientMap;
 
     if(checkPort != port) {
         return;
     }
 
-    qDebug() << "Starting listening for port: " << port;
+    qDebug() << "Starting listening on port: " << port;
 
     // Create new socket
     if((sockfd = Socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -93,12 +96,12 @@ void Forwarding::startListening(int checkPort)
     while(1) {
         // Wait for connections
         if((numfd = Epoll_wait(epfd, epEvents, E_POLL_QUEUE_LEN, -1)) < 0) {
-            if(errno == EINTR) {
-                continue;
+            if(errno != EINTR) {
+                perror("Epoll_wait(): ");
+                emit isRunning(QString::number(port), false);
+                return;
             }
-            perror("Epoll_wait(): ");
-            emit isRunning(QString::number(port), false);
-            return;
+            continue;
         }
 
         for(int it = 0; it < numfd; it++) {
@@ -106,7 +109,7 @@ void Forwarding::startListening(int checkPort)
             if(epEvents[it].events & (EPOLLHUP | EPOLLERR)) {
                 qDebug() << "epoll:EPOLLERR";
                 Close(epEvents[it].data.fd);
-                emit isRunning(QString::number(port), false);
+                //emit isRunning(QString::number(port), false);
                 return;
             }
 
@@ -117,42 +120,63 @@ void Forwarding::startListening(int checkPort)
                 if((clifd = Accept(sockfd, (struct sockaddr *)&client, &cliLen)) < 0) {
                     if(errno != EAGAIN && errno != EWOULDBLOCK) {
                         perror("Accept(): ");
-                        emit isRunning(QString::number(port), false);
+                        //emit isRunning(QString::number(port), false);
                         return;
                     }
                     continue;
                 }
 
+                qDebug() << "Connected: " << inet_ntoa(client.sin_addr);
+
                 // Set to nonblocking
                 if(Fcntl(clifd, F_SETFL) < 0) {
                     perror("Fcntl(): ");
-                    emit isRunning(QString::number(port), false);
+                    //emit isRunning(QString::number(port), false);
                     return;
                 }
 
                 epEvent.data.fd = clifd;
 
                 // Add to clifd to epoll
-                if(Epoll_ctl(clifd, EPOLL_CTL_ADD,epfd, &epEvent) < 0) {
+                if(Epoll_ctl(epfd, EPOLL_CTL_ADD, clifd, &epEvent) < 0) {
                     perror("Epoll_ctl(): ");
-                    emit isRunning(QString::number(port), false);
+                    //emit isRunning(QString::number(port), false);
                     return;
                 }
 
                 thread = new QThread();
                 thread->start();
-                clientCon = new Client(clifd, inet_ntoa(client.sin_addr),
-                                       target, port, ntohs(client.sin_port));
+                clientCon = new Client(clifd, target, port);
+                clientMap.insert(clifd, clientCon);
                 if(clientCon->startTargetConnection() == -1) {
                     emit isRunning(QString::number(port), false);
                     return;
                 }
-                connect(this, SIGNAL(sendToInternal(int)), clientCon,
-                        SLOT(sendToInternal(int)));
+                connect(this, SIGNAL(sendToExternal(int)), clientCon,
+                        SLOT(sendToExternal(int)));
                 clientCon->moveToThread(thread);
+                emit sendToExternal(clifd);
+
+                continue;
             }
+
+            clifd = epEvents[it].data.fd;
             // Process Data
-            emit sendToInternal(epEvents[it].data.fd);
+            if((n = read(clifd, buff, BUFF_LEN)) < 0) {
+                if(errno == EINTR) {
+                    return;
+                } else {
+                    perror("Read(): ");
+                    return;
+                }
+            }
+            if(n == 0) {
+                close(clifd);
+                delete clientMap[clifd];
+                clientMap.remove(clifd);
+                continue;
+            }
+            clientMap[clifd]->sendToInternal(buff, n);
         }
     }
 }

@@ -22,7 +22,7 @@ private:
 
 signals:
     void isRunning(QString port, bool running);
-    void sendToInternal(int sockfd);
+    void sendToExternal(int);
 };
 
 #endif // FORWARDING_H

@@ -5,9 +5,14 @@
 #include <signal.h>
 #include <QDebug>
 
-Client::Client(int clifd, QString ip, QString target, int port, int cliPort) :
-    clifd(clifd), ip(ip), target(target), port(port), cliPort(cliPort)
+Client::Client(int clifd, QString target, int port) :
+    clifd(clifd), target(target), port(port)
 {
+}
+
+Client::~Client()
+{
+    close(clifd);
 }
 
 int Client::startTargetConnection()
@@ -42,139 +47,54 @@ int Client::startTargetConnection()
         return -1;
     }
 
+    bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
+
     // Connect to target machine
     if(Connect(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
         perror("Connect(): ");
         return -1;
     }
 
+    qDebug() << "Connected to: " << target;
+
     return 0;
 }
 
-void Client::sendToInternal(int sockfd)
+void Client::sendToInternal(char *buff, int len)
 {
-    char buff[BUFF_LEN];
-    int n;
-    int size;
-    int hlen1;
-    int tcplen;
-    socklen_t len;
-    socklen_t tempLen;
-    struct sockaddr src;
-    struct sockaddr dst;
-    struct sockaddr_in tempAddr;
-    struct ipheader *iphdr;
-    struct tcpheader *tcphdr;
-
-    if(clifd != sockfd) {
-        return;
-    }
-
-    size = 60 * 1024;
-    Setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
-
-    // Read all the
-    if((n = Recvfrom(sockfd, buff, sizeof(buff), 0, &src, &len)) < 0) {
-        if(errno == EINTR) {
-            return;
-        } else {
-            perror("Recvfrom(): ");
-            return;
-        }
-    }
-
-    if(n == 0) {
-        close(this->sockfd);
-        close(sockfd);
-    }
-
-    // Grab IP Header
-    iphdr = (struct ipheader *)buff;
-    hlen1 = iphdr->iph_len << 2;
-
-    // Grab TCP Header
-    tcphdr = (struct tcpheader *)(buff + hlen1);
-    if((tcplen = len - hlen1) < 20) {
-        qDebug() << "tcplen < 20: " << tcplen;
-    }
-
-    tempLen = sizeof(tempAddr);
-    Getsockname(this->sockfd, (struct sockaddr*)&tempAddr, &tempLen);
-
-    // Change Dest and Source IP
-    iphdr->iph_destip = inet_addr(target.toLatin1().data());
-    iphdr->iph_sourceip = tempAddr.sin_addr.s_addr;
-
-    // Change src port
-    tcphdr->tcph_srcport = tempAddr.sin_port;
-
-    tempLen = tcplen + 20 + len;
-
-    if(Sendto(this->sockfd, buff, size, 0, &dst, len) != tempLen) {
-        perror("Send to(): ");
-        return;
-    }
-
-    sendToExternal(sockfd);
+    // Write all of it to the internal machine
+    write(this->sockfd, buff, len);
 }
 
 void Client::sendToExternal(int sockfd)
 {
     char buff[BUFF_LEN];
     int n;
-    int size;
-    int hlen1;
-    int tcplen;
-    socklen_t len;
-    socklen_t tempLen;
-    struct sockaddr src;
-    struct sockaddr dst;
-    struct sockaddr_in tempAddr;
-    struct ipheader *iphdr;
-    struct tcpheader *tcphdr;
 
-    size = 60 * 1024;
-    Setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
+    if(clifd != sockfd) {
+        return;
+    }
 
-    // Read all the
-    if((n = Recvfrom(this->sockfd, buff, sizeof(buff), 0, &src, &len)) < 0) {
-        if(errno == EINTR) {
-            return;
-        } else {
-            perror("Recvfrom(): ");
+    qDebug() << "Internal listener started";
+
+    while(1) {
+        // Read all the data
+        if((n = read(this->sockfd, buff, BUFF_LEN)) < 0) {
+            if(errno == EINTR) {
+                return;
+            } else {
+                perror("Read(): ");
+                return;
+            }
+        }
+
+        if(n == 0) {
+            close(this->sockfd);
+            close(clifd);
+
             return;
         }
-    }
 
-    if(n == 0) {
-        close(this->sockfd);
-        close(sockfd);
-    }
-
-    // Grab IP Header
-    iphdr = (struct ipheader *)buff;
-    hlen1 = iphdr->iph_len << 2;
-
-    // Grab TCP Header
-    tcphdr = (struct tcpheader *)(buff + hlen1);
-    if((tcplen = len - hlen1) < 20) {
-        qDebug() << "tcplen < 20: " << tcplen;
-    }
-
-    tempLen = sizeof(tempAddr);
-    Getsockname(sockfd, (struct sockaddr*)&tempAddr, &tempLen);
-
-    // Change Dest and Source IP
-    iphdr->iph_destip = inet_addr(target.toLatin1().data());
-    iphdr->iph_sourceip = tempAddr.sin_addr.s_addr;
-
-    // Change src port
-    tcphdr->tcph_srcport = tempAddr.sin_port;
-
-    tempLen = tcplen + 20 + len;
-
-    if(Sendto(sockfd, buff, size, 0, &dst, len) != tempLen) {
-        perror("Send to(): ");
-        return;
+        write(clifd, buff, n);
     }
 }
