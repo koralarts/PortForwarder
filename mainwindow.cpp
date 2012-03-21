@@ -33,6 +33,7 @@
 #include <QStringList>
 #include <QThread>
 #include <QList>
+#include <QMessageBox>
 
 /***********************************************************
  * FUNCTION: MainWindow()
@@ -311,22 +312,29 @@ void MainWindow::on_actionExit_triggered()
  ***********************************************************/
 void MainWindow::on_addB_clicked()
 {
-    QString service;
-    QString listenPort;
+    int service;
+    int listenPort;
+    bool error = false;
     QString target;
 
-    if((service = ui->serviceE->text()).isEmpty()) {
-        return;
-    }
 
-    if((listenPort = ui->listenE->text()).isEmpty()) {
-        return;
-    }
+    service = ui->serviceE->value();
+    listenPort = ui->listenE->value();
 
     if((target = ui->targetE->text()).isEmpty()) {
+        error = true;
         return;
     }
 
-    addToTable(service, listenPort, target);
-    startListener(service.toInt(), listenPort.toInt(), target);
+    if(!error) {
+        ui->serviceE->setValue(0);
+        ui->listenE->setValue(0);
+        ui->targetE->clear();
+
+        addToTable(QString::number(service), QString::number(listenPort), target);
+        startListener(service, listenPort, target);
+    } else {
+        QMessageBox::warning(this, "Error", "Target IP must not be blank",
+                             QMessageBox::Ok);
+    }
 }
