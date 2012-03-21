@@ -1,3 +1,27 @@
+/***********************************************************
+ * SOURCE FILE: client.cpp
+ *
+ * PROGRAM: PortForwarder
+ *
+ * FUNCTIONS:
+ * Client(int clifd, QString target, int port);
+ * ~Client();
+ * int startTargetConnection();
+ * void sendToInternal(char *buff, int len);
+ * void sendToExternal(int sockfd);
+ *
+ * DATE: MARCH 11, 2012
+ *
+ * DESIGNER: Karl Castillo
+ *
+ * PROGRAMMER: Karl Castillo
+ *
+ * NOTES:
+ * The Client class is where messages from the client will be
+ * sent to the target machine, and this is also where
+ * messages from the target machine will be sent to the client.
+ ***********************************************************/
+
 #include "client.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,16 +29,74 @@
 #include <signal.h>
 #include <QDebug>
 
+/***********************************************************
+ * FUNCTION: Client()
+ *
+ * DATE: March 11, 2012
+ *
+ * REVISIONS: (Date and Description)
+ *
+ * DESIGNER: Karl Castillo
+ *
+ * PROGRAMMER: Karl Castillo
+ *
+ * INTERFACE: Client(int clifd, QString target, int port);
+ *			   clifd: the client's socket descriptor
+ *             target: the target IP address
+ *             port: the port of the service
+ *
+ * RETURN: void
+ *
+ * NOTES:
+ * The Client class constructor.
+ ***********************************************************/
 Client::Client(int clifd, QString target, int port) :
     clifd(clifd), target(target), port(port)
 {
 }
 
+/***********************************************************
+ * FUNCTION: ~Client()
+ *
+ * DATE: March 11, 2012
+ *
+ * REVISIONS: (Date and Description)
+ *
+ * DESIGNER: Karl Castillo
+ *
+ * PROGRAMMER: Karl Castillo
+ *
+ * INTERFACE: ~Client()
+ *
+ * RETURN: void
+ *
+ * NOTES:
+ * The Client class destructor.
+ ***********************************************************/
 Client::~Client()
 {
     close(clifd);
 }
 
+/***********************************************************
+ * FUNCTION: startTargetConnection()
+ *
+ * DATE: March 11, 2012
+ *
+ * REVISIONS: (Date and Description)
+ *
+ * DESIGNER: Karl Castillo
+ *
+ * PROGRAMMER: Karl Castillo
+ *
+ * INTERFACE: int startTargetConnection()
+ *
+ * RETURN: int
+ *          -1: failure
+ *
+ * NOTES:
+ * This function initializes a connection to the target machine.
+ ***********************************************************/
 int Client::startTargetConnection()
 {
     struct sockaddr_in server;
@@ -60,12 +142,56 @@ int Client::startTargetConnection()
     return 0;
 }
 
+/***********************************************************
+ * FUNCTION: sendToInternal()
+ *
+ * DATE: March 11, 2012
+ *
+ * REVISIONS: (Date and Description)
+ *
+ * DESIGNER: Karl Castillo
+ *
+ * PROGRAMMER: Karl Castillo
+ *
+ * INTERFACE: void sendToInternal(char *buff, int len)
+ *                 buff: data that will be sent to the internal machine
+ *                 len: length of the data that will be sent to the internal
+ *                      machine
+ *
+ * RETURN: int
+ *          -1: failure
+ *
+ * NOTES:
+ * This function sends data to the target machine from the
+ * external client.
+ ***********************************************************/
 void Client::sendToInternal(char *buff, int len)
 {
     // Write all of it to the internal machine
     write(this->sockfd, buff, len);
 }
 
+/***********************************************************
+ * FUNCTION: sendToExternal()
+ *
+ * DATE: March 11, 2012
+ *
+ * REVISIONS: (Date and Description)
+ *
+ * DESIGNER: Karl Castillo
+ *
+ * PROGRAMMER: Karl Castillo
+ *
+ * INTERFACE: void sendToExternal(int sockfd)
+ *                 sockfd: the client's socket descriptor
+ *
+ * RETURN: int
+ *          -1: failure
+ *
+ * NOTES:
+ * This function sends data from the target machine to the
+ * external client.
+ ***********************************************************/
 void Client::sendToExternal(int sockfd)
 {
     char buff[BUFF_LEN];

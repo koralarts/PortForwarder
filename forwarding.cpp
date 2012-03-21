@@ -1,3 +1,24 @@
+/***********************************************************
+ * SOURCE FILE: fowrarding.cpp
+ *
+ * PROGRAM: PortForwarder
+ *
+ * FUNCTIONS:
+ * Forwarding(int port, int listenPort, QString target);
+ * ~Forwarding();
+ * void startListening(int checkPort)
+ *
+ * DATE: MARCH 11, 2012
+ *
+ * DESIGNER: Karl Castillo
+ *
+ * PROGRAMMER: Karl Castillo
+ *
+ * NOTES:
+ * The Forwarding class is the class that will listen for
+ * connections from clients and will do the forwarding for a
+ * specific service.
+ ***********************************************************/
 #include "forwarding.h"
 #include "epoll.h"
 #include "socket.h"
@@ -9,16 +30,76 @@
 #include <QString>
 #include <QThread>
 
-Forwarding::Forwarding(int port, QString target) :
-    port(port), target(target)
+/***********************************************************
+ * FUNCTION: Forwarding()
+ *
+ * DATE: March 11, 2012
+ *
+ * REVISIONS: (Date and Description)
+ *
+ * DESIGNER: Karl Castillo
+ *
+ * PROGRAMMER: Karl Castillo
+ *
+ * INTERFACE: Forwarding(int port, int listenPort, QString target)
+ *			   port: the service port
+ *             listenPort: the listening port
+ *             target: target ip address
+ *
+ * RETURN: void
+ *
+ * NOTES:
+ * The Forwarding class constructor.
+ ***********************************************************/
+Forwarding::Forwarding(int port, int listenPort, QString target) :
+    port(port), listenPort(listenPort), target(target)
 {
 }
 
+/***********************************************************
+ * FUNCTION: ~Forwarding()
+ *
+ * DATE: March 11, 2012
+ *
+ * REVISIONS: (Date and Description)
+ *
+ * DESIGNER: Karl Castillo
+ *
+ * PROGRAMMER: Karl Castillo
+ *
+ * INTERFACE: ~Forwarding()
+ *
+ * RETURN: void
+ *
+ * NOTES:
+ * The Forwarding class destructor.
+ ***********************************************************/
 Forwarding::~Forwarding()
 {
     close(sockfd);
 }
 
+/***********************************************************
+ * FUNCTION: startListening()
+ *
+ * DATE: March 11, 2012
+ *
+ * REVISIONS: (Date and Description)
+ *
+ * DESIGNER: Karl Castillo
+ *
+ * PROGRAMMER: Karl Castillo
+ *
+ * INTERFACE: void startListening(int checkPort)
+ *                 checkPort: the service that will be forwarded
+ *
+ * RETURN: int
+ *          -1: failure
+ *
+ * NOTES:
+ * This function acts as an ePoll server that will receive
+ * connection requests from external machines(clients)
+ ***********************************************************/
 void Forwarding::startListening(int checkPort)
 {
     static struct epoll_event epEvents[E_POLL_QUEUE_LEN];
@@ -42,7 +123,7 @@ void Forwarding::startListening(int checkPort)
         return;
     }
 
-    qDebug() << "Starting listening on port: " << port;
+    qDebug() << "Starting listening on port: " << listenPort;
 
     // Create new socket
     if((sockfd = Socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -61,7 +142,7 @@ void Forwarding::startListening(int checkPort)
 
     bzero((char*)&server, sizeof(struct sockaddr_in));
     server.sin_family = AF_INET;
-    server.sin_port = htons(port);
+    server.sin_port = htons(listenPort);
     server.sin_addr.s_addr = htonl(INADDR_ANY);
 
     // Bind socket

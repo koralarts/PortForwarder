@@ -9,7 +9,7 @@ class Forwarding : public QObject
 {
     Q_OBJECT
 public:
-    Forwarding(int port, QString target);
+    Forwarding(int port, int listenPort, QString target);
     ~Forwarding();
 
 public slots:
@@ -18,6 +18,7 @@ public slots:
 private:
     int sockfd;
     int port;
+    int listenPort;
     QString target;
 
 signals:

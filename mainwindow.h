@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "forwarding.h"
 #include <QMainWindow>
 #include <QMap>
 #include <QString>
@@ -22,15 +23,15 @@ public slots:
 
 private slots:
     void on_actionExit_triggered();
+    void on_addB_clicked();
 
 private:
     Ui::MainWindow *ui;
-    QMap<int, QString> portmap;
+    QMap <int, Forwarding*> forwardingMap;
 
     void parseConfFile();
-    void QDebug(QString mesg);
-    void addToTable(QString service, QString ip);
-    void startListeners();
+    void addToTable(QString service, QString listenPort, QString ip);
+    void startListener(int service, int listenPort, QString target);
 
 signals:
     void startServiceListener(int);

@@ -33,7 +33,6 @@ ssize_t Sendto(int sockfd, void *buf, size_t len, int flags,
 int Close(int fd);
 struct hostent* Gethostbyname(char *host);
 void Getsockname(int sockfd, sockaddr *addr, socklen_t *len);
-unsigned short checksum(unsigned short *buf, int nwords);
 
 struct ipheader {
     unsigned char      iph_ihl:5, iph_ver:4;
