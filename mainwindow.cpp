@@ -56,7 +56,8 @@
  ***********************************************************/
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    changed(false)
 {
     QStringList headers;
     headers.append("Service/Port");
@@ -333,8 +334,24 @@ void MainWindow::on_addB_clicked()
 
         addToTable(QString::number(service), QString::number(listenPort), target);
         startListener(service, listenPort, target);
+        changed = true;
     } else {
-        QMessageBox::warning(this, "Error", "Target IP must not be blank",
+        QMessageBox::warning(this, tr("Error"),
+                             tr("Target IP must not be blank"),
                              QMessageBox::Ok);
+    }
+}
+
+void MainWindow::on_delB_clicked()
+{
+    QModelIndexList selected = ui->portmapT->selectionModel()->selectedRows();
+    int row = selected.at(0).row();
+
+    qDebug() << row;
+    qDebug() << ui->portmapT->item(row, 0)->text();
+
+    if(selected.size() > 0) {
+        delete forwardingMap.value(ui->portmapT->item(row, 0)->text().toInt());
+        ui->portmapT->removeRow(row);
     }
 }

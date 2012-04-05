@@ -24,10 +24,12 @@ public slots:
 private slots:
     void on_actionExit_triggered();
     void on_addB_clicked();
+    void on_delB_clicked();
 
 private:
     Ui::MainWindow *ui;
     QMap <int, Forwarding*> forwardingMap;
+    bool changed;
 
     void parseConfFile();
     void addToTable(QString service, QString listenPort, QString ip);

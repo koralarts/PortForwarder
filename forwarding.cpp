@@ -21,8 +21,6 @@
  ***********************************************************/
 #include "forwarding.h"
 #include "epoll.h"
-#include "socket.h"
-#include "client.h"
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
@@ -52,7 +50,9 @@
  * The Forwarding class constructor.
  ***********************************************************/
 Forwarding::Forwarding(int port, int listenPort, QString target) :
-    port(port), listenPort(listenPort), target(target)
+    port(port),
+    listenPort(listenPort),
+    target(target)
 {
 }
 
@@ -76,6 +76,12 @@ Forwarding::Forwarding(int port, int listenPort, QString target) :
  ***********************************************************/
 Forwarding::~Forwarding()
 {
+    QMap<int, Client*>::iterator it;
+
+    for(it = clientMap.begin(); it != clientMap.end(); ++it) {
+        delete it.value();
+    }
+
     close(sockfd);
 }
 
@@ -117,7 +123,6 @@ void Forwarding::startListening(int checkPort)
 
     QThread *thread;
     Client *clientCon;
-    QMap <int, Client*> clientMap;
 
     if(checkPort != port) {
         return;

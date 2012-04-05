@@ -2,8 +2,10 @@
 #define FORWARDING_H
 
 #include "socket.h"
+#include "client.h"
 #include <QString>
 #include <QObject>
+#include <QMap>
 
 class Forwarding : public QObject
 {
@@ -20,6 +22,7 @@ private:
     int port;
     int listenPort;
     QString target;
+    QMap <int, Client*> clientMap;
 
 signals:
     void isRunning(QString port, bool running);
