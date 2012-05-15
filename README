@@ -1,8 +1,28 @@
 ====================================
 -
-- Port Forwarder
+- Port Forwarder V 1.0
 -
 ====================================
 
 Author:
 	Karl Castillo
+
+Contact:
+	karl@karlworks.com
+	www.karlworks.com
+
+About:
+	This Port Forwarder supports multiple ports to be forwarded at one time. The user has a choice as to how he
+	wants to create forwarding rules; the user can either create a config file that will include the port to be 
+	forwarded, the IP of the server, and the port that will be used to connect to the server. Another way to create
+	a rule is to add it manually via the "Add Rule Sidebar" which asks for the same information.
+
+Current Features:
+	1. Ability to use a configuration file to setup rules
+	2. Ability to use the sidebar to create rules one-by-one
+	3. Ability to delete rules
+
+Features to be Added:
+	1. Ability to start/stop services
+	2. Ability to save rulesets
+	3. Ability to import rulesets
